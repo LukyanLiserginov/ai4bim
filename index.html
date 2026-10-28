@@ -827,9 +827,9 @@
          - LANDING_REPO: репозиторий лендинга — заявки уходят на него
            через GitHub Actions; workflow form-mailer.yml доставляет
            письмо на ai4bim@ro.ru по SMTP.
-         - DISPATCH_TOKEN: fine-grained токен GitHub (Settings →
-           Developer settings → Fine-grained tokens), доступ только к
-           репозиторию ai4bim, разрешение Workflow. ЗАМЕНИТЕ перед запуском.
+         - DISPATCH_TOKEN: плейсхолдер; deploy.yml на этапе деплоя
+           заменяет его значением секрета репозитория DISPATCH_TOKEN
+           (fine-grained токен, доступ только к ai4bim, разрешение Workflow).
          ============================================================ */
       const GITHUB_REPO = 'https://github.com/LukyanLiserginov/XbimStudio';
       const LANDING_REPO = 'LukyanLiserginov/ai4bim';

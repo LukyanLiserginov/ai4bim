@@ -21,6 +21,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Токен не хранится в репозитории: deploy подставляет его из секрета
+      # DISPATCH_TOKEN в публикуемую копию index.html.
+      - name: Inject dispatch token
+        env:
+          TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import os
+          token = os.environ.get('TOKEN') or ''
+          if not token:
+              raise SystemExit('DISPATCH_TOKEN secret is not set (repo Settings -> Secrets and variables -> Actions).')
+          path = 'index.html'
+          with open(path, encoding='utf-8') as f:
+              html = f.read()
+          if 'REPLACE_WITH_FINE_GRAINED_PAT' not in html:
+              raise SystemExit('Placeholder REPLACE_WITH_FINE_GRAINED_PAT not found in index.html.')
+          html = html.replace('REPLACE_WITH_FINE_GRAINED_PAT', token)
+          with open(path, 'w', encoding='utf-8') as f:
+              f.write(html)
+          print('Dispatch token injected into index.html.')
+          PYEOF
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

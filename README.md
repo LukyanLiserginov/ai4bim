@@ -58,17 +58,18 @@
 1. **Fine-grained токен**: GitHub → **Settings → Developer settings →
    Fine-grained tokens → Generate new token**:
    - доступ: только репозиторий `LukyanLiserginov/ai4bim`;
-   - разрешение: **Workflow** (read и write).
+   - разрешение: **Workflow** (read и write);
+   - короткий срок действия (например, 90 дней) с ротацией.
 
-   Вставьте токен в `index.html`:
-   ```js
-   const DISPATCH_TOKEN = '...'; // ← ваш токен
-   ```
+   Токен **не вставляется в `index.html`** — он хранится как секрет
+   репозитория, а `deploy.yml` подставляет его в публикуемую страницу
+   вместо плейсхолдера. Так токен не попадает в git-историю.
 
 2. **Секреты репозитория** (Settings → Secrets and variables → Actions):
 
    | Секрет | Что вписать |
    |---|---|
+   | `DISPATCH_TOKEN` | fine-grained токен |
    | `SMTP_HOST` | SMTP-сервер ящика ai4bim@ro.ru (например `smtp.beget.com`) |
    | `SMTP_PORT` | `587` (STARTTLS) или `465` (TLS) |
    | `SMTP_USER` | `ai4bim@ro.ru` |
@@ -90,13 +91,6 @@
 |---|---|
 | `GITHUB_REPO` | `https://github.com/LukyanLiserginov/XbimStudio` — репозиторий плагина |
 | `LANDING_REPO` | `LukyanLiserginov/ai4bim` — приём заявок через GitHub Actions |
-| `DISPATCH_TOKEN` | fine-grained токен — **ЗАМЕНИТЕ перед запуском** |
+| `DISPATCH_TOKEN` | плейсхолдер в файле; при деплое заменяется значением секрета репозитория `DISPATCH_TOKEN` |
 
-## Примечания
 
-- Токен виден в исходнике страницы. Fine-grained токен с правом только **Workflow**
-  на один репозиторий ограничивает риск: им можно лишь отправлять тестовые
-  заявки, но не трогать код или секреты.
-- Если SMTP-доступа к ящику ai4bim@ro.ru нет — скажите, какой хостинг ведёт
-  домен `ro.ru`, помогу подобрать параметры; как запасной вариант —
-  Resend/SendGrid (но это зарубежные сервисы).
