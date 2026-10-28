@@ -1,0 +1,65 @@
+name: Form mailer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      # Данные формы приходят из github.event.client_payload (POST из JS страницы).
+      # Письмо доставляется на SMTP-сервер ящика ai4bim@ro.ru.
+      - name: Send email via SMTP
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          MAIL_TO: ai4bim@ro.ru
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, smtplib, ssl
+          from email.message import EmailMessage
+
+          payload = json.loads(os.environ['PAYLOAD'])
+          if not payload:
+              print('No client_payload — skipping.')
+              raise SystemExit(0)
+
+          source = str(payload.get('source') or 'landing')
+          fields = []
+          for key, label in (
+              ('name', 'Имя'),
+              ('company', 'Компания'),
+              ('email', 'Email'),
+              ('phone', 'Телефон'),
+              ('message', 'Сообщение'),
+          ):
+              value = str(payload.get(key) or '').strip()
+              if value:
+                  fields.append(label + ': ' + value)
+
+          msg = EmailMessage()
+          msg['From'] = os.environ.get('SMTP_FROM') or os.environ['SMTP_USER']
+          msg['To'] = os.environ['MAIL_TO']
+          msg['Subject'] = 'AI4BIM: заявка (' + source + ')'
+          msg.set_content('Заявка с лендинга AI4BIM.\n\n' + '\n'.join(fields))
+
+          host = os.environ['SMTP_HOST']
+          port = int(os.environ.get('SMTP_PORT') or 587)
+          if port == 465:
+              server = smtplib.SMTP_SSL(host, port, context=ssl.create_default_context())
+          else:
+              server = smtplib.SMTP(host, port, timeout=30)
+              server.ehlo()
+              server.starttls(context=ssl.create_default_context())
+          server.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])
+          server.send_message(msg)
+          server.quit()
+          print('Email sent to ' + os.environ['MAIL_TO'])
+          PYEOF

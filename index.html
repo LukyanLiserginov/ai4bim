@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI4BIM — проверка BIM-моделей с помощью ИИ и внедрение AI-агентов в процессы проектирования. AI-аудит IFC/RVT, RAG-системы, приватные LLM-серверы. Бесплатный AI-плагин для XbimXplorer.">
+  <meta name="theme-color" content="#0B1120">
+  <meta property="og:title" content="AI4BIM — AI для BIM: проверка моделей и внедрение AI-агентов">
+  <meta property="og:description" content="Практические AI-решения для BIM/AEC: аудит информационных моделей, RAG-системы, приватные LLM-серверы. Бесплатный AI-плагин для XbimXplorer.">
+  <meta property="og:type" content="website">
+  <title>AI для BIM — проверка моделей и внедрение AI-агентов | AI4BIM</title>
+
+  <!--
+    ============================================================
+    ЛЕНДИНГ: один файл, без сборки.
+    - CSS встроен ниже (mobile-first, без внешних зависимостей).
+    - JS в конце файла: скролл, модальное окно, формы лидов.
+    - Изображения: используются только inline SVG (0 запросов к сети).
+      Если добавите реальные скриншоты — отдавайте WebP и
+      указывайте loading="lazy" на каждом <img>.
+    - Заявки уходят через GitHub Actions (workflow form-mailer.yml, письмо на ai4bim@ro.ru).
+    ============================================================
+  -->
+
+  <style>
+    /* ---------- Reset & tokens ---------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0B1120;            /* тёмно-синий графит */
+      --bg-soft: #101828;       /* поверхности */
+      --surface: #141D31;       /* карточки */
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #E7ECF3;
+      --muted: #9AA5B5;
+      --accent: #0066FF;        /* электрик */
+      --accent-soft: rgba(0, 102, 255, 0.14);
+      --neon: #00FF88;          /* неоновый зелёный — точечные акценты */
+      --neon-soft: rgba(0, 255, 136, 0.12);
+      --radius: 12px;
+      --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* ---------- Layout ---------- */
+    .container {
+      width: 100%;
+      max-width: 1120px;
+      margin-inline: auto;
+      padding-inline: 20px;
+    }
+
+    section { padding-block: 64px; scroll-margin-top: 72px; }
+
+    .eyebrow {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--neon);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(1.9rem, 4.5vw + 0.6rem, 3.1rem);
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: clamp(1.5rem, 2.5vw + 0.5rem, 2.1rem);
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 16px;
+    }
+
+    .lead {
+      font-size: 1.0625rem;
+      color: var(--muted);
+      max-width: 56ch;
+      margin-top: 16px;
+    }
+
+    /* ---------- Skip link (a11y) ---------- */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 100;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 0 0 var(--radius) 0;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .skip-link:focus { left: 0; }
+
+    /* ---------- Header ---------- */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 17, 32, 0.86);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 60px;
+    }
+
+    .brand {
+      font-family: var(--mono);
+      font-weight: 800;
+      font-size: 1.3rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .brand .four { color: var(--accent); }
+    .brand .bim { color: var(--neon); }
+
+    .main-nav { display: none; }
+
+    @media (min-width: 720px) {
+      .main-nav {
+        display: flex;
+        gap: 24px;
+      }
+      .main-nav a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        transition: color 0.15s ease;
+      }
+      .main-nav a:hover, .main-nav a:focus-visible { color: var(--text); }
+    }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 22px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .btn:focus-visible { outline: 2px solid var(--neon); outline-offset: 2px; }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1a78ff; transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    .btn-sm { padding: 9px 16px; font-size: 0.9375rem; }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      padding-top: 72px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* абстрактная инженерная сетка + свечение — вместо стоковых фото */
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(600px 420px at 82% 18%, rgba(0, 102, 255, 0.16), transparent 70%),
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+      background-size: auto, 44px 44px, 44px 44px;
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 40px;
+      position: relative;
+    }
+    @media (min-width: 960px) {
+      .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; }
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .hero-facts {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      margin-top: 28px;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .hero-facts li { display: flex; align-items: center; gap: 8px; }
+    .hero-facts .tick { color: var(--neon); font-family: var(--mono); }
+
+    /* Терминал-панель (mock AI-агента) */
+    .terminal {
+    background: #0D1424;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .terminal-bar .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: #2A3550; }
+  .terminal-bar .tl-dot:nth-child(2) { background: #2A3550; }
+  .terminal-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+  .terminal-body {
+    padding: 16px 14px 18px;
+    font-family: var(--mono);
+    font-size: 0.8125rem;
+    line-height: 1.75;
+    overflow-x: auto;
+  }
+  .term-line { white-space: pre-wrap; word-break: break-word; }
+  .term-prompt { color: var(--neon); }
+  .term-ok { color: var(--neon); }
+  .term-warn { color: #FFB86B; }
+  .term-dim { color: var(--muted); }
+  .term-cmd { color: var(--text); }
+
+  /* ---------- Services ---------- */
+    .services { background: var(--bg-soft); border-block: 1px solid var(--border); }
+
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 32px;
+    }
+    @media (min-width: 780px) {
+      .card-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .card:hover { border-color: rgba(0, 102, 255, 0.5); transform: translateY(-2px); }
+
+    .card .card-num {
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+    .card h3 { font-size: 1.125rem; font-weight: 700; line-height: 1.3; }
+    .card p { color: var(--muted); font-size: 0.9375rem; }
+
+    .card .card-icon {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .card .card-icon svg { width: 22px; height: 22px; }
+
+    /* ---------- Plugin (бесплатный инструмент) ---------- */
+    .plugin { position: relative; overflow: hidden; }
+    .plugin::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(520px 360px at 12% 50%, var(--neon-soft), transparent 70%);
+      pointer-events: none;
+    }
+
+    .plugin-grid {
+      display: grid;
+      gap: 32px;
+      position: relative;
+    }
+    @media (min-width: 900px) {
+      .plugin-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+    }
+
+    .feature-list {
+      list-style: none;
+      margin-top: 20px;
+      display: grid;
+      gap: 10px;
+    }
+    .feature-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--muted);
+      font-size: 0.9375rem;
+    }
+    .feature-list .tick { color: var(--neon); font-family: var(--mono); line-height: 1.6; }
+
+    .lead-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .lead-panel h3 { font-size: 1.0625rem; font-weight: 700; margin-bottom: 8px; }
+    .lead-panel .panel-note { color: var(--muted); font-size: 0.875rem; margin-bottom: 16px; }
+
+    /* ---------- Forms ---------- */
+    .field { display: grid; gap: 6px; margin-bottom: 14px; }
+    .field label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .field .optional { color: var(--muted); font-weight: 400; }
+
+    input, textarea {
+      width: 100%;
+      font-family: var(--font);
+      font-size: 1rem;
+      color: var(--text);
+      background: #0D1424;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      transition: border-color 0.15s ease;
+    }
+    input::placeholder, textarea::placeholder { color: #6B7689; }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .form-note { font-size: 0.8125rem; color: var(--muted); margin-top: 12px; }
+
+    .lead-success[hidden] { display: none; }
+    .lead-success {
+      display: grid;
+      gap: 12px;
+      align-items: start;
+    }
+    .lead-success p { font-weight: 600; }
+    .lead-success a.btn { width: fit-content; }
+
+    /* ---------- Bento (квалификация) ---------- */
+    .proof { background: var(--bg-soft); border-block: 1px solid var(--border); }
+
+    .bento {
+      display: grid;
+      gap: 14px;
+      margin-top: 32px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) {
+      .bento { grid-template-columns: repeat(2, 1fr); }
+      .bento .bento-wide { grid-column: span 2; }
+    }
+
+    .bento-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      display: grid;
+      gap: 8px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .bento-item:hover { border-color: rgba(0, 255, 136, 0.45); transform: translateY(-2px); }
+    .bento-item:focus-visible { outline: 2px solid var(--neon); outline-offset: 2px; }
+
+    .bento-num {
+      font-family: var(--mono);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--neon);
+    }
+    .bento-item h3 { font-size: 1.0625rem; font-weight: 700; }
+    .bento-item p { color: var(--muted); font-size: 0.875rem; }
+    .bento-item .bento-tag {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .bento-link .arrow { color: var(--neon); font-family: var(--mono); }
+
+    /* ---------- Contact form ---------- */
+    .contact-form {
+      max-width: 640px;
+      margin-top: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .form-row-2 { display: grid; gap: 14px; }
+    @media (min-width: 560px) {
+      .form-row-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ---------- Footer ---------- */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding-block: 28px;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .footer-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 16px; }
+    .footer-links a {
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s ease;
+    }
+    .footer-links a:hover, .footer-links a:focus-visible { border-color: var(--neon); }
+
+    /* ---------- Modal ---------- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .modal[hidden] { display: none; }
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 9, 18, 0.78);
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    }
+    .modal-card h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 8px; padding-right: 32px; }
+    .modal-card .modal-desc { color: var(--muted); font-size: 0.9375rem; margin-bottom: 16px; }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .modal-close:hover, .modal-close:focus-visible { color: var(--text); border-color: var(--accent); }
+
+    /* ---------- Utilities ---------- */
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      clip: rect(0 0 0 0);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+
+  <!-- ==================== Header ==================== -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="AI4BIM — на главную">AI<span class="four">4</span><span class="bim">BIM</span></a>
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a href="#services">Услуги</a>
+        <a href="#plugin">Бесплатный плагин</a>
+        <a href="#proof">Квалификация</a>
+        <a href="#contact">Контакты</a>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="#contact">Обсудить проект</a>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ==================== Секция 1: Hero ==================== -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">AI · BIM · AEC</p>
+          <h1 id="hero-title">Проверка BIM-моделей с помощью ИИ и внедрение AI-агентов в процессы проектирования</h1>
+          <p class="lead">Практические решения от инженера, который сам разрабатывает AI-инструменты для BIM. Без коробочных обещаний — только работающий код и измеримый результат.</p>
+
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#contact">Обсудить проект</a>
+            <button type="button" class="btn btn-ghost" data-open-modal aria-haspopup="dialog">Скачать бесплатный AI-плагин для XbimXplorer</button>
+          </div>
+
+          <ul class="hero-facts">
+            <li><span class="tick" aria-hidden="true">✓</span> 15 MCP-инструментов для агентов</li>
+            <li><span class="tick" aria-hidden="true">✓</span> Приватные LLM-серверы на вашем оборудовании</li>
+            <li><span class="tick" aria-hidden="true">✓</span> Бесплатный плагин для XbimXplorer</li>
+          </ul>
+        </div>
+
+        <!-- Абстрактная инженерная графика: mock терминала AI-агента (inline, без изображений) -->
+        <div class="terminal" role="img" aria-label="Пример работы AI-агента: автоматическая проверка BIM-модели">
+          <div class="terminal-bar" aria-hidden="true">
+            <span class="tl-dot"></span><span class="tl-dot"></span><span class="tl-dot"></span>
+            <span class="terminal-title">xbimxplorer — ai-agent</span>
+          </div>
+          <div class="terminal-body" aria-hidden="true">
+            <div class="term-line"><span class="term-prompt">›</span> <span class="term-cmd">Проверь модель на соответствие LOD 400 и стандартам именования</span></div>
+            <div class="term-line"><span class="term-ok">✓</span> <span class="term-dim">Загружено: 12 431 элемент IFC</span></div>
+            <div class="term-line"><span class="term-ok">✓</span> <span class="term-dim">Активно: 8 правил (LOD, naming, кастомные)</span></div>
+            <div class="term-line"><span class="term-warn">⚠</span> <span class="term-dim">Найдено: 142 отклонения</span></div>
+            <div class="term-line"><span class="term-ok">→</span> <span class="term-dim">Отчёт сгруппирован по дисциплинам · время: 4 мин 12 с</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Секция 2: Услуги ==================== -->
+    <section class="services" id="services" aria-labelledby="services-title">
+      <div class="container">
+        <p class="eyebrow">Услуги</p>
+        <h2 id="services-title">Что я делаю для BIM-команд</h2>
+
+        <div class="card-grid">
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/>
+                <path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>
+              </svg>
+            </div>
+            <span class="card-num">01</span>
+            <h3>AI-аудит информационных моделей</h3>
+            <p>Автоматическая проверка IFC/RVT моделей на соответствие требованиям (LOD, стандарты именования, кастомные правила) с помощью AI-агентов. Сокращение времени ручного аудита с дней до часов.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <path d="M9 9h6M9 12h6M9 15h4"/>
+              </svg>
+            </div>
+            <span class="card-num">02</span>
+            <h3>Внедрение ИИ в процессы компании</h3>
+            <p>Разработка и интеграция RAG-систем, агентов и кастомных AI-ассистентов для автоматизации внутренних задач: от работы с нормативной документацией до генерации отчётов.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="5" width="18" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="18" height="7" rx="1.5"/>
+                <circle cx="7" cy="8.5" r="1"/>
+                <circle cx="7" cy="17.5" r="1"/>
+              </svg>
+            </div>
+            <span class="card-num">03</span>
+            <h3>Готовый ИИ-сервер под ключ</h3>
+            <p>Настройка приватного LLM-сервера (на базе вашего оборудования или арендованного) для 1 пользователя. Полный цикл: от выбора конфигурации до запуска и передачи инструкций. Идеально для конфиденциальных данных.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Секция 3: Бесплатный инструмент ==================== -->
+    <section class="plugin" id="plugin" aria-labelledby="plugin-title">
+      <div class="container plugin-grid">
+        <div>
+          <p class="eyebrow">Бесплатно</p>
+          <h2 id="plugin-title">Попробуйте мой подход в деле: бесплатный AI-плагин для XbimXplorer</h2>
+          <p class="lead">Я разработал плагин, который добавляет AI-агента прямо в ваш XbimXplorer. Задавайте вопросы по модели, получайте сводки и выполняйте кастомные проверки на естественном языке. Скачайте бесплатно, чтобы оценить мою экспертизу и подход к работе.</p>
+
+          <ul class="feature-list">
+            <li><span class="tick" aria-hidden="true">✓</span> Вопросы по модели на естественном языке</li>
+            <li><span class="tick" aria-hidden="true">✓</span> Автоматические сводки по элементам и дисциплинам</li>
+            <li><span class="tick" aria-hidden="true">✓</span> Кастомные проверки без написания кода</li>
+            <li><span class="tick" aria-hidden="true">✓</span> Работает локально, данные не покидают машину</li>
+          </ul>
+        </div>
+
+        <div class="lead-panel">
+          <h3>Получить ссылку на скачивание</h3>
+          <p class="panel-note">Укажите email — пришлю ссылку на GitHub-репозиторий и инструкцию по установке.</p>
+
+          <!-- Inline-форма лида. Статический хостинг: JS отправляет email через
+               GitHub Actions (workflow form-mailer.yml) и показывает ссылку после отправки. -->
+          <form class="lead-form" novalidate>
+            <div class="field">
+              <label for="lead-email-inline">Email</label>
+              <input type="email" id="lead-email-inline" name="email" required autocomplete="email" placeholder="you@company.com">
+            </div>
+            <button type="submit" class="btn btn-primary">Получить ссылку на скачивание</button>
+            <p class="form-note" id="lead-error-inline" role="alert" hidden></p>
+          </form>
+
+          <div class="lead-success" id="lead-success-inline" role="status" hidden>
+            <p>Готово! Ссылка на скачивание:</p>
+            <a class="btn btn-primary" href="#" target="_blank" rel="noopener">GitHub-репозиторий плагина ↗</a>
+            <p class="form-note">Инструкция по установке — в README репозитория.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Секция 4: Доказательства квалификации ==================== -->
+    <section class="proof" id="proof" aria-labelledby="proof-title">
+      <div class="container">
+        <p class="eyebrow">Квалификация</p>
+        <h2 id="proof-title">Техническая база, на которой строятся решения</h2>
+
+        <div class="bento">
+          <article class="bento-item bento-wide">
+            <span class="bento-num">15</span>
+            <h3>MCP-инструментов для агентных LLM-систем</h3>
+            <p>Собственные инструменты по протоколу MCP: работа агентов с BIM-моделями, проектными данными и файлами без ручного glue-кода.</p>
+          </article>
+
+          <article class="bento-item">
+            <span class="bento-num">5</span>
+            <h3>LoRA-файнтюнинг моделей на базе Qwen 3.5</h3>
+            <p>Адаптация открытых LLM под BIM-задачи: терминология, форматы данных, специфика AEC-документации.</p>
+          </article>
+
+          <article class="bento-item">
+            <span class="bento-num">3</span>
+            <h3>LLM-сервера</h3>
+            <p>Собственные LLM-серверы под ключ: опыт администрирования GPU-инфраструктуры на Tesla V100 — от конфигурации до эксплуатации в продакшене.</p>
+          </article>
+
+          <a class="bento-item bento-link" href="https://huggingface.co/LLiserginov" target="_blank" rel="noopener" aria-label="Портфолио на Hugging Face (открывается в новой вкладке)">
+            <span class="bento-tag">Портфолио</span>
+            <h3>Hugging Face: huggingface.co/LLiserginov <span class="arrow" aria-hidden="true">↗</span></h3>
+            <p>Модели, датасеты и артефакты — публично, чтобы проверить экспертизу в деле.</p>
+          </a>
+
+          <a class="bento-item bento-link" href="https://github.com/LukyanLiserginov/XbimStudio" target="_blank" rel="noopener" aria-label="Исходный код XbimStudio на GitHub (открывается в новой вкладке)">
+            <span class="bento-tag">Исходный код</span>
+            <h3>GitHub: github.com/LukyanLiserginov/XbimStudio <span class="arrow" aria-hidden="true">↗</span></h3>
+            <p>Код бесплатного AI-плагина для XbimXplorer: агент, MCP-инструменты и инструкция по установке.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Секция 5: Форма заявки ==================== -->
+    <section class="contact" id="contact" aria-labelledby="contact-title">
+      <div class="container">
+        <p class="eyebrow">Контакты</p>
+        <h2 id="contact-title">Обсудим вашу задачу?</h2>
+        <p class="lead">Опишите задачу в нескольких предложениях — отвечу с конкретикой: что реально автоматизируется, сроки и стоимость. Без «менеджер перезвонит».</p>
+
+        <!--
+          Статический хостинг: JS отправляет данные через GitHub Actions
+          (workflow form-mailer.yml шлёт письмо на ai4bim@ro.ru по SMTP).
+        -->
+        <form class="contact-form">
+          <!-- honeypot против спама -->
+          <input type="text" name="_gotcha" class="visually-hidden" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+          <div class="form-row-2">
+            <div class="field">
+              <label for="cf-name">Имя</label>
+              <input type="text" id="cf-name" name="name" required autocomplete="name" placeholder="Иван Петров">
+            </div>
+            <div class="field">
+              <label for="cf-company">Компания</label>
+              <input type="text" id="cf-company" name="company" autocomplete="organization" placeholder="ООО «Проект»">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="field">
+              <label for="cf-email">Email</label>
+              <input type="email" id="cf-email" name="email" required autocomplete="email" placeholder="you@company.com">
+            </div>
+            <div class="field">
+              <label for="cf-phone">Телефон <span class="optional">(необязательно)</span></label>
+              <input type="tel" id="cf-phone" name="phone" autocomplete="tel" placeholder="+7 900 000-00-00">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="cf-message">Краткое описание задачи</label>
+            <textarea id="cf-message" name="message" required placeholder="Например: хотим автоматизировать проверку IFC-моделей перед выдачей в производство…"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Отправить заявку</button>
+          <p class="form-note" id="contact-error" role="alert" hidden></p>
+          <p class="form-note">Отправляя форму, вы соглашаетесь на обработку указанных контактов. Никакого спама — только ответ по вашей задаче.</p>
+        </form>
+
+        <div class="lead-success" id="contact-success" role="status" hidden>
+          <p>Спасибо! Заявка отправлена — отвечу по указанному email.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== Секция 6: Футер ==================== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-links">
+        <a href="mailto:ai4bim@ro.ru" aria-label="Написать на email">ai4bim@ro.ru</a>
+        <a href="https://t.me/Absolut_Neon" target="_blank" rel="noopener" aria-label="Telegram Absolut_Neon (открывается в новой вкладке)">Telegram</a>
+        <a href="https://huggingface.co/LLiserginov" target="_blank" rel="noopener" aria-label="Портфолио на Hugging Face (открывается в новой вкладке)">Hugging Face</a>
+      </div>
+      <p>© <span id="year">2026</span> AI4BIM · AI-инструменты для BIM/AEC</p>
+    </div>
+  </footer>
+
+  <!-- ==================== Модальное окно: плагин ==================== -->
+  <div class="modal" id="plugin-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card">
+      <button type="button" class="modal-close" data-close-modal aria-label="Закрыть окно">×</button>
+      <h3 id="modal-title">Бесплатный AI-плагин для XbimXplorer</h3>
+      <p class="modal-desc">Укажите email — пришлю ссылку на GitHub-репозиторий и инструкцию по установке.</p>
+
+      <form class="lead-form" novalidate>
+        <div class="field">
+          <label for="lead-email-modal">Email</label>
+          <input type="email" id="lead-email-modal" name="email" required autocomplete="email" placeholder="you@company.com">
+        </div>
+        <button type="submit" class="btn btn-primary">Получить ссылку на скачивание</button>
+        <p class="form-note" id="lead-error-modal" role="alert" hidden></p>
+      </form>
+
+      <div class="lead-success" id="lead-success-modal" role="status" hidden>
+        <p>Готово! Ссылка на скачивание:</p>
+        <a class="btn btn-primary" href="#" target="_blank" rel="noopener">GitHub-репозиторий плагина ↗</a>
+        <p class="form-note">Инструкция по установке — в README репозитория.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ============================================================
+         Константы:
+         - GITHUB_REPO: URL репозитория плагина.
+         - LANDING_REPO: репозиторий лендинга — заявки уходят на него
+           через GitHub Actions; workflow form-mailer.yml доставляет
+           письмо на ai4bim@ro.ru по SMTP.
+         - DISPATCH_TOKEN: fine-grained токен GitHub (Settings →
+           Developer settings → Fine-grained tokens), доступ только к
+           репозиторию ai4bim, разрешение Workflow. ЗАМЕНИТЕ перед запуском.
+         ============================================================ */
+      const GITHUB_REPO = 'https://github.com/LukyanLiserginov/XbimStudio';
+      const LANDING_REPO = 'LukyanLiserginov/ai4bim';
+      const DISPATCH_TOKEN = 'REPLACE_WITH_FINE_GRAINED_PAT';
+
+      // Отправка формы как workflow_dispatch: данные приходят в
+      // github.event.client_payload и уходят в workflow form-mailer.yml.
+      async function dispatchForm(payload) {
+        const res = await fetch('https://api.github.com/repos/' + LANDING_REPO + '/dispatches', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + DISPATCH_TOKEN,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ event_type: 'form-submit', client_payload: payload }),
+        });
+        if (!res.ok) throw new Error('GitHub dispatch: ' + res.status);
+      }
+
+      /* ---------- Модальное окно ---------- */
+      const modal = document.getElementById('plugin-modal');
+      let lastFocused = null;
+
+      function focusables() {
+        return Array.from(modal.querySelectorAll('button, input, a[href]'))
+          .filter(el => !el.disabled && el.offsetParent !== null);
+      }
+
+      function openModal() {
+        lastFocused = document.activeElement;
+        modal.hidden = false;
+        const first = focusables()[0];
+        if (first) first.focus();
+      }
+
+      function closeModal() {
+        modal.hidden = true;
+        if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+      }
+
+      document.querySelectorAll('[data-open-modal]').forEach(btn =>
+        btn.addEventListener('click', openModal)
+      );
+      document.querySelectorAll('[data-close-modal]').forEach(el =>
+        el.addEventListener('click', closeModal)
+      );
+
+      document.addEventListener('keydown', (e) => {
+        if (modal.hidden) return;
+        if (e.key === 'Escape') { closeModal(); return; }
+        // простой focus-trap внутри диалога
+        if (e.key === 'Tab') {
+          const items = focusables();
+          if (!items.length) return;
+          const first = items[0], last = items[items.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      });
+
+      /* ---------- Формы сбора лида (inline + модалка) ---------- */
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+      function bindLeadForm(form) {
+        const input = form.querySelector('input[type="email"]');
+        const errorEl = form.parentElement.querySelector('[role="alert"]');
+        const successEl = form.parentElement.querySelector('.lead-success');
+        const successLink = successEl ? successEl.querySelector('a[href="#"]') : null;
+        const button = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const value = input.value.trim();
+
+          if (!EMAIL_RE.test(value)) {
+            errorEl.textContent = 'Введите корректный email, например you@company.com.';
+            errorEl.hidden = false;
+            input.focus();
+            return;
+          }
+          errorEl.hidden = true;
+          if (button) button.disabled = true;
+
+          // Статический хостинг: отправляем email через GitHub Actions
+          // (workflow form-mailer.yml доставит письмо на ai4bim@ro.ru).
+          try {
+            await dispatchForm({ source: 'landing-lead', email: value });
+            if (successLink) successLink.href = GITHUB_REPO;
+            form.hidden = true;
+            if (successEl) successEl.hidden = false;
+          } catch (err) {
+            errorEl.textContent = 'Не удалось отправить. Попробуйте ещё раз или напишите на ai4bim@ro.ru.';
+            errorEl.hidden = false;
+            input.focus();
+          } finally {
+            if (button) button.disabled = false;
+          }
+        });
+      }
+
+      document.querySelectorAll('.lead-form').forEach(bindLeadForm);
+
+      // Контактная форма: JS отправляет данные через GitHub Actions.
+      const contactForm = document.querySelector('.contact-form');
+      if (contactForm) {
+        const cError = document.getElementById('contact-error');
+        const cSuccess = document.getElementById('contact-success');
+        const cButton = contactForm.querySelector('button[type="submit"]');
+
+        contactForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const data = Object.fromEntries(new FormData(contactForm).entries());
+          delete data._gotcha; // honeypot не отправляем
+          data.source = 'contact-form';
+          if (cButton) cButton.disabled = true;
+          try {
+            await dispatchForm(data);
+            contactForm.hidden = true;
+            if (cSuccess) cSuccess.hidden = false;
+          } catch (err) {
+            if (cError) {
+              cError.textContent = 'Не удалось отправить. Попробуйте ещё раз или напишите на ai4bim@ro.ru.';
+              cError.hidden = false;
+            }
+          } finally {
+            if (cButton) cButton.disabled = false;
+          }
+        });
+      }
+
+      /* ---------- Год в копирайте ---------- */
+      const yearEl = document.getElementById('year');
+      if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+    })();
+  </script>
+</body>
+</html>
