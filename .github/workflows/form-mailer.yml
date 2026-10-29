@@ -1,6 +1,8 @@
 name: Form mailer
 
 on:
+  repository_dispatch:
+    types: [form-submit]
   workflow_dispatch:
 
 permissions:
